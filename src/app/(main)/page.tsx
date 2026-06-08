@@ -6,7 +6,7 @@ import { Search, Shield, Clock, Star, ArrowRight } from "lucide-react";
 import type { WorkerWithRelations } from "@/types";
 
 async function getFeaturedWorkers(): Promise<WorkerWithRelations[]> {
-  return prisma.workerProfile.findMany({
+  const workers = await prisma.workerProfile.findMany({
     where: { registrationPaid: true },
     orderBy: [{ featuredUntil: "desc" }, { avgRating: "desc" }, { totalJobsDone: "desc" }],
     take: 8,
@@ -16,7 +16,8 @@ async function getFeaturedWorkers(): Promise<WorkerWithRelations[]> {
       reviewsReceived: { include: { reviewer: true }, take: 3 },
       portfolioImages: { take: 3 },
     },
-  }) as WorkerWithRelations[];
+  });
+  return workers as unknown as WorkerWithRelations[];
 }
 
 async function getCategories() {

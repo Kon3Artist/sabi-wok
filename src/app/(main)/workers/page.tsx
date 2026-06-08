@@ -4,7 +4,7 @@ import { WorkersFilter } from "@/components/workers/workers-filter";
 import type { WorkerWithRelations } from "@/types";
 
 interface PageProps {
-  searchParams: { category?: string; availability?: string; tier?: string; q?: string };
+  searchParams: Promise<{ category?: string; availability?: string; tier?: string; q?: string }>;
 }
 
 async function getWorkers(params: PageProps["searchParams"]): Promise<WorkerWithRelations[]> {
@@ -23,7 +23,7 @@ async function getWorkers(params: PageProps["searchParams"]): Promise<WorkerWith
     ];
   }
 
-  return prisma.workerProfile.findMany({
+  const workers = await prisma.workerProfile.findMany({
     where,
     orderBy: [{ featuredUntil: "desc" }, { avgRating: "desc" }],
     include: {
@@ -32,7 +32,8 @@ async function getWorkers(params: PageProps["searchParams"]): Promise<WorkerWith
       reviewsReceived: { include: { reviewer: true }, take: 3 },
       portfolioImages: { take: 3 },
     },
-  }) as Promise<WorkerWithRelations[]>;
+  });
+  return workers as unknown as WorkerWithRelations[];
 }
 
 async function getCategories() {
@@ -40,7 +41,8 @@ async function getCategories() {
 }
 
 export default async function WorkersPage({ searchParams }: PageProps) {
-  const [workers, categories] = await Promise.all([getWorkers(searchParams), getCategories()]);
+  const resolvedParams = await searchParams;
+  const [workers, categories] = await Promise.all([getWorkers(resolvedParams), getCategories()]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
