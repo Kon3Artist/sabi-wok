@@ -16,3 +16,5 @@ corepack.cmd
 nodevars.bat
 install_tools.bat
 node.exe
+
+package-lock.json
