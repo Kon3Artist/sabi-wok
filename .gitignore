@@ -2,3 +2,17 @@
 .env.local
 node_modules/
 .next/
+*.exe
+*.bat
+*.ps1
+npm
+npm.cmd
+npm.ps1
+npx
+npx.cmd
+npx.ps1
+corepack
+corepack.cmd
+nodevars.bat
+install_tools.bat
+node.exe
