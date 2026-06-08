@@ -5,15 +5,16 @@ import { prisma } from "@/lib/prisma";
 import { initializeTransaction, generateReference } from "@/lib/paystack";
 import { calcPlatformFee, calcWorkerPayout } from "@/lib/utils";
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const { id } = await params;
   const { action } = await req.json();
   const clientId = (session.user as any).id;
 
   const quote = await prisma.quote.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       jobRequest: { include: { client: true } },
       worker: { include: { user: true } },
@@ -28,7 +29,6 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     const platformFee = calcPlatformFee(total);
     const workerPayout = calcWorkerPayout(total);
 
-    // Create booking from accepted quote
     const booking = await prisma.booking.create({
       data: {
         clientId,
@@ -47,11 +47,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       },
     });
 
-    // Update statuses
-    await prisma.quote.update({ where: { id: params.id }, data: { status: "ACCEPTED", acceptedAt: new Date() } });
+    await prisma.quote.update({ where: { id }, data: { status: "ACCEPTED", acceptedAt: new Date() } });
     await prisma.jobRequest.update({ where: { id: quote.jobRequestId }, data: { status: "BOOKED" } });
 
-    // Initialize payment
     const reference = generateReference("QUOTE");
     await prisma.payment.create({
       data: { bookingId: booking.id, amount: total, status: "PENDING", paystackReference: reference },
@@ -79,7 +77,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 
   if (action === "reject") {
-    await prisma.quote.update({ where: { id: params.id }, data: { status: "REJECTED", rejectedAt: new Date() } });
+    await prisma.quote.update({ where: { id }, data: { status: "REJECTED", rejectedAt: new Date() } });
     await prisma.jobRequest.update({ where: { id: quote.jobRequestId }, data: { status: "OPEN" } });
 
     await prisma.notification.create({

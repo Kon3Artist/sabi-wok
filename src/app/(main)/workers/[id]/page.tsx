@@ -33,8 +33,9 @@ const availabilityBadge = {
   OFFLINE: { label: "Offline", variant: "secondary" as const, dot: "bg-gray-400" },
 };
 
-export default async function WorkerProfilePage({ params }: { params: { id: string } }) {
-  const [worker, session] = await Promise.all([getWorker(params.id), getServerSession(authOptions)]);
+export default async function WorkerProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const [worker, session] = await Promise.all([getWorker(id), getServerSession(authOptions)]);
 
   if (!worker) notFound();
 
